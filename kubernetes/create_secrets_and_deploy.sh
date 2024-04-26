@@ -1,7 +1,7 @@
 DOCKERHUB_LOGIN=$1
 DOCKERHUB_TOKEN=$2
-NAMESPACE=ml-endpoint
-APP_NAME=ml-endpoint
+NAMESPACE=ml-api
+APP_NAME=ml-api
 
 kubectl delete $APP_NAME-deployment -deployment -n $NAMESPACE 
 kubectl delete svc $APP_NAME-service -n $NAMESPACE
