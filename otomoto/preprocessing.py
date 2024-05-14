@@ -45,7 +45,7 @@ class Preprocessing:
         columns_to_keep = ['Cena', 'Marka pojazdu', 'Model pojazdu', 'Wersja', 'Generacja',
             'Rok produkcji', 'Przebieg', 'Pojemność skokowa', 'Rodzaj paliwa',
             'Moc', 'Skrzynia biegów', 'Napęd', 'Spalanie W Mieście', 'Typ nadwozia','Liczba drzwi',
-            'Liczba miejsc', 'Kolor', 'Kraj pochodzenia','Stan']
+            'Liczba miejsc', 'Kolor', 'Kraj pochodzenia','Stan', 'Uszkodzony']
         return df[columns_to_keep]
     
 
@@ -58,6 +58,10 @@ class Preprocessing:
 
 
     def _convert_datatypes(self, df: pd.DataFrame) -> pd.DataFrame:
+        df['Uszkodzony'].fillna('No', inplace=True)
+        df['Uszkodzony'].replace('Tak', 'Yes', inplace=True)
+        df['Uszkodzony'].replace('Nie', 'No', inplace=True)
+
         df['Rok produkcji'] = df['Rok produkcji'].apply(lambda x: self._convert_to_type(x, int))
         df['Przebieg'] = df['Przebieg'].astype(str).str.replace(' km', '').str.replace(' ', '').astype(float)
         df['Pojemność skokowa'] = df['Pojemność skokowa'].str.replace(' cm3', '').str.replace(' ', '').astype(float)
@@ -92,7 +96,7 @@ class Preprocessing:
             'Year of production', 'Mileage', 'Engine Capacity', 'Fuel Type', 'Horse Power',
             'Transmission Type', 'Drive Type', 'Gas Usage per 100km', 'Car Body Type',
             'Number of doors', 'Number of seats', 'Color', 'Country of origin',
-            'New/Used']
+            'New/Used', 'Damaged']
 
         return df
 
@@ -115,7 +119,7 @@ class Preprocessing:
             'vehicle_generation', 'year_of_production', 'mileage',
             'engine_capacity', 'fuel_type', 'horse_power', 'transmission_type',
             'drive_type', 'gas_usage_per_100km', 'car_body_type', 'number_of_doors',
-            'number_of_seats', 'color', 'country_of_origin', 'new_used'
+            'number_of_seats', 'color', 'country_of_origin', 'new_used', 'damaged'
         ]
 
         return self.df
