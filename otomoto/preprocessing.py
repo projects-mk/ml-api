@@ -19,7 +19,7 @@ class Preprocessing:
     def __init__(self):
         self.engine = create_engine(os.getenv('DB_CONNECTION_STRING'))
         self.df = pd.read_sql_table('otomoto_data', con=self.engine)\
-            .drop(columns=['index','Oblicz','Kup ten pojazd na ratyOblicz','Pokaż oferty z numerem VIN','Oferta od','Ma numer rejestracyjny'])\
+            .drop(columns=['index','Oblicz','Kup ten pojazd na ratyOblicz','Pokaż oferty z numerem VIN','Oferta od','Ma numer rejestracyjny'], errors='ignore')\
             .drop_duplicates()
 
     @staticmethod
