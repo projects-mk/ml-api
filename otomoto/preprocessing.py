@@ -69,6 +69,7 @@ class Preprocessing:
         df['Spalanie W Mieście'] = df['Spalanie W Mieście'].str.replace(' l/100km', '').str.replace(',', '.').str.replace(' ', '').astype(float)
         df['Liczba drzwi'] = df['Liczba drzwi'].apply(lambda x: self._convert_to_type(x, int))
         df['Liczba miejsc'] = df['Liczba miejsc'].apply(lambda x: self._convert_to_type(x, int))
+        df['Cena'] = df['Cena'].apply(lambda x: self._convert_to_type(x, int))
         return df
 
     @staticmethod
@@ -104,8 +105,8 @@ class Preprocessing:
     def preprocess_data(self) -> pd.DataFrame:
         # self.df = self._remove_na_columns(self.df)
         self.df = self._keep_selected_columns(self.df)
-        self.df = self._drop_rows_with_nulls(self.df)
         self.df = self._convert_datatypes(self.df)
+        self.df = self._drop_rows_with_nulls(self.df)        
         self.df = self._translate_to_eng(self.df)
         
         self.save_to_sql('otomoto_data_cleaned', os.getenv('DB_CONNECTION_STRING'))
@@ -113,18 +114,10 @@ class Preprocessing:
 
 
     def get_data(self) -> pd.DataFrame:
-
-        self.df.columns = [
-            'price', 'vehicle_brand', 'vehicle_model', 'vehicle_version',
-            'vehicle_generation', 'year_of_production', 'mileage',
-            'engine_capacity', 'fuel_type', 'horse_power', 'transmission_type',
-            'drive_type', 'gas_usage_per_100km', 'car_body_type', 'number_of_doors',
-            'number_of_seats', 'color', 'country_of_origin', 'new_used', 'damaged'
-        ]
-
+        self.df.columns = [col.replace(" ","_").lower() for col in self.df.columns]
         return self.df
 
 
     def save_to_sql(self, table_name: str, sql_engine: str):
         engine = create_engine(sql_engine)
-        self.df.to_sql(table_name, engine, if_exists='replace', index=False)
+        self.get_data().to_sql(table_name, engine, if_exists='replace', index=False)
