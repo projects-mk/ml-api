@@ -1,58 +1,142 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 import pandas as pd
-from otomoto.preprocessing import Preprocessing
-from otomoto.model_training import ModelTrainer
-from otomoto.utils import get_unique_values
 from otomoto.model_predictions import Predictor
 from otomoto.input_models import OtomotoInputData
 from fastapi import Body
-from fastapi import HTTPException
+from utils import generate_conn_string
+import os
 
-app = FastAPI()
+app = FastAPI(title=os.getenv("APP_NAME"), version=os.getenv("APP_VERSION"))
 
 
-@app.post("/api/v1/otomoto/train_model",tags=['model_training'])
-async def train_model():
+@app.get("/api/v1/otomoto/", tags=["otomoto"])
+async def otomoto_marka():
     try:
-        data_processor = Preprocessing()
-        data_processor.preprocess_data()
+        marka = "SELECT DISTINCT marka FROM otomoto.preprocessed"
+        options = sorted(
+            pd.read_sql_query(marka, con=generate_conn_string("projects"))[
+                "marka"
+            ].values
+        )
+        return {"response": options}
 
-        input_data = data_processor.get_data()
-
-        model_trainer = ModelTrainer(input_data, target_column='price')
-        model_trainer.preprocess()
-        model_trainer.train_models()
-
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=f"Error occurred: {error}")
-
-    return {"message": "Models trained and registered successfully"}
+    except Exception as e:
+        return {"response": str(e)}
 
 
-@app.post("/api/v1/otomoto/get_dropdown_values",tags=['dropdown_values'])
-async def get_dropdown_values():
+@app.get("/api/v1/otomoto/{marka}", tags=["otomoto"])
+async def otomoto_dropdown_values(marka: str):
     try:
-        unique_values = get_unique_values()
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=f"Error occurred: {error}")
+        model = (
+            f"SELECT DISTINCT model FROM otomoto.preprocessed WHERE marka = '{marka}'"
+        )
+        model = sorted(
+            pd.read_sql_query(model, con=generate_conn_string("projects"))[
+                "model"
+            ].values
+        )
 
-    return unique_values
+        rodzaj_paliwa = "SELECT DISTINCT rodzaj_paliwa FROM otomoto.preprocessed"
+        rodzaj_paliwa = sorted(
+            pd.read_sql_query(rodzaj_paliwa, con=generate_conn_string("projects"))[
+                "rodzaj_paliwa"
+            ].values
+        )
+
+        skrzynia_biegow = "SELECT DISTINCT skrzynia_biegow FROM otomoto.preprocessed"
+        skrzynia_biegow = sorted(
+            pd.read_sql_query(skrzynia_biegow, con=generate_conn_string("projects"))[
+                "skrzynia_biegow"
+            ]
+            .dropna()
+            .values
+        )
+
+        naped = "SELECT DISTINCT naped FROM otomoto.preprocessed"
+        naped = sorted(
+            pd.read_sql_query(naped, con=generate_conn_string("projects"))["naped"]
+            .dropna()
+            .values
+        )
+
+        nadwozie = "SELECT DISTINCT nadwozie FROM otomoto.preprocessed"
+        nadwozie = sorted(
+            pd.read_sql_query(nadwozie, con=generate_conn_string("projects"))[
+                "nadwozie"
+            ]
+            .dropna()
+            .values
+        )
+
+        bezwypadkowy = "SELECT DISTINCT bezwypadkowy FROM otomoto.preprocessed"
+        bezwypadkowy = sorted(
+            pd.read_sql_query(bezwypadkowy, con=generate_conn_string("projects"))[
+                "bezwypadkowy"
+            ]
+            .dropna()
+            .values
+        )
+
+        serwisowany_w_aso = (
+            "SELECT DISTINCT serwisowany_w_aso FROM otomoto.preprocessed"
+        )
+        serwisowany_w_aso = sorted(
+            pd.read_sql_query(serwisowany_w_aso, con=generate_conn_string("projects"))[
+                "serwisowany_w_aso"
+            ]
+            .dropna()
+            .values
+        )
+
+        stan = "SELECT DISTINCT stan FROM otomoto.preprocessed"
+        stan = sorted(
+            pd.read_sql_query(stan, con=generate_conn_string("projects"))["stan"]
+            .dropna()
+            .values
+        )
+
+        return {
+            "response": {
+                "model": model,
+                "rodzaj_paliwa": rodzaj_paliwa,
+                "skrzynia_biegow": skrzynia_biegow,
+                "naped": naped,
+                "nadwozie": nadwozie,
+                "bezwypadkowy": bezwypadkowy,
+                "serwisowany_w_aso": serwisowany_w_aso,
+                "stan": stan,
+            }
+        }
+
+    except Exception as e:
+        return {"response": str(e)}
 
 
-@app.post("/api/v1/otomoto/predict",tags=['model_predictions'])
-async def predict(data: OtomotoInputData = Body(...)):
-    json_data = data.model_dump()
-    model_name = json_data['model_name']
-    transformer_name = 'otomoto_data_encoder'
-    features = {k: v for k, v in json_data.items() if k != 'model_name'}    
+@app.post("/api/v1/otomoto/predict", tags=["model_predictions"])
+async def otomoto_predict(data: OtomotoInputData = Body(...)):
+
     try:
-        predictor = Predictor(model_name, transformer_name)
-        pred = predictor.predict(features)
-    
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=f"Error occurred: {error}")
-    
-    return {"message": pred}
-    
-    
+        transformer_name = "otomoto_car_price_predictor_data_encoder"
+        model_name = "xgboost_otomoto_car_price_predictor_price_predictor"
+        vars_to_ohe = [
+            "marka",
+            "model",
+            "rodzaj_paliwa",
+            "skrzynia_biegow",
+            "naped",
+            "nadwozie",
+            "bezwypadkowy",
+            "serwisowany_w_aso",
+            "stan",
+        ]
+
+        predictor = Predictor(model_name=model_name, transformer_name=transformer_name)
+        predictor.load_models()
+
+        data = data.model_dump()
+        response = predictor.predict(data, vars_to_ohe)
+
+        return {"response": float(response)}
+
+    except Exception as e:
+        return {"response": str(e)}
