@@ -4,9 +4,18 @@ from otomoto.model_predictions import Predictor
 from otomoto.input_models import OtomotoInputData
 from fastapi import Body
 from utils import generate_conn_string
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI(title=os.getenv("APP_NAME"), version=os.getenv("APP_VERSION"))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/api/v1/otomoto/", tags=["otomoto"])
